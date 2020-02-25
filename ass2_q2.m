@@ -6,7 +6,7 @@
 % occupancy grid then using that grid to estimate a robot's motion using a
 % particle filter.
 % 
-% There are three questions to complete (5 marks each):
+% There are two questions to complete (5 marks each):
 %
 %    Question 1: see ass2_q1.m 
 %    Question 2: code particle filter to localize from known map
@@ -181,7 +181,16 @@ for i=2:size(t_laser,1)
     
         % compute the weight for each particle using only 2 laser rays 
         % (right=beam 1 and left=beam 640)
-        w_particle(n) = 1.0;     
+        w_particle(n) = 1;     
+        min_max_angles = [phi_min_laser, phi_max_laser];
+        
+        TIR = [
+          cos(theta_particle(n)) -sin(theta_particle(n)) 0 x_particle(n) - 0.1 * cos(theta_particle(n));
+          sin(theta_particle(n)) cos(theta_particle(n)) 0 y_particle(n) - 0.1 * sin(theta_particle(n));
+          0 0 1 0;
+          0 0 0 1;
+        ];
+        
         for beam=1:2         
          
             % we will only use the first and last laser ray for
@@ -193,48 +202,26 @@ for i=2:size(t_laser,1)
             end
             
             % ------insert your particle filter weight calculation here ------
-
+            observed_range = 10;
+            for p=ogres:ogres:r_max_laser
+                p_robot = [p * cos(min_max_angles(beam));
+                    p * sin(min_max_angles(beam));
+                    0;
+                    1];
+                p_inert = TIR * p_robot;
+                p_map = p_inert + [7; 3; 0; 0];
+                p_coord = round(p_map/0.05);
+                if p_coord(1) <= 0 || p_coord(2) <= 0 || p_coord(1) > 180 || p_coord(2) > 300
+                    continue
+                end
+                if ogp(p_coord(2), p_coord(1)) > -10
+                   observed_range = p;
+                end
+            end
+            distance = abs(y_laser(i, j) - observed_range);
+            w_particle(n) = w_particle(n) * 1/distance;
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+   
             
             % ------end of your particle filter weight calculation-------
         end
@@ -293,7 +280,7 @@ for i=2:size(t_laser,1)
     
     % save the video frame
     M = getframe;
-    writeVideo(vid,M);
+    %writeVideo(vid,M);
 
     pause(0.01);
    

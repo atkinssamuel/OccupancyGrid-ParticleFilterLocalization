@@ -87,6 +87,9 @@ axis off;
 M = getframe;
 writeVideo(vid,M);
 
+alpha = 10;
+beta = 10;
+
 % loop over laser scans (every fifth)
 for i=1:5:size(t_laser,1)
     
@@ -97,17 +100,31 @@ for i=1:5:size(t_laser,1)
       0 0 1 0;
       0 0 0 1;
     ];
-    for k=1:size(t_laser,2)
-        increments = round(y_laser(i, k)/0.05);
-        unocc_pts = zeros([4, 1]);
-        for p=1:(increments-1)
-            point_range = 0.05*p;
-            unocc_pts(:, p) = [point_range * cos(angles(k)); point_range * sin(angles(k)); 0; 1];
+    unocc_pt_index = 1;
+    occ_pt_index = 1;
+
+    unocc_pts = zeros([4, 1]);
+    occ_pts = zeros([4, 1]);
+    for k=1:size(y_laser,2)
+        if isnan(y_laser(i, k))
+            continue
         end
-        occ_pt = [y_laser(i, k) * cos(angles(k)); y_laser(i, k) * sin(angles(k)); 0; 1];
+        increments = round(y_laser(i, k)/0.05);
+        for p=1:increments
+            point_range = 0.05*p;
+            if p <= increments - 2
+                unocc_pts(:, unocc_pt_index) = [point_range * ...
+                    cos(angles(k)); point_range * sin(angles(k)); 0; 1];
+                unocc_pt_index = unocc_pt_index + 1;
+            else
+                occ_pts(:, occ_pt_index) = [point_range * ...
+                    cos(angles(k)); point_range * sin(angles(k)); 0; 1];
+                occ_pt_index = occ_pt_index + 1;
+            end
+        end
     end
     unocc_pts_inertial = TIR * unocc_pts;
-    occ_pt_inertial = TIR * occ_pt;
+    occ_pts_inertial = TIR * occ_pts;
     
     unocc_pts_coords = unocc_pts_inertial + [
         ones(1, size(unocc_pts_inertial, 2))*(7);
@@ -116,12 +133,22 @@ for i=1:5:size(t_laser,1)
         zeros(1, size(unocc_pts_inertial, 2));
         ];
     unocc_pts_coords(1:2, :) = round(unocc_pts_coords(1:2, :)/0.05);
-        
+    unocc_indeces = sub2ind(size(ogp), unocc_pts_coords(2, :), unocc_pts_coords(1, :));
     
+    occ_pts_coords = occ_pts_inertial + [
+        ones(1, size(occ_pts_inertial, 2))*(7);
+        ones(1, size(occ_pts_inertial, 2))*(3);
+        zeros(1, size(occ_pts_inertial, 2));
+        zeros(1, size(occ_pts_inertial, 2));
+        ];
+    occ_pts_coords(1:2, :) = round(occ_pts_coords(1:2, :)/0.05);
+    occ_indeces = sub2ind(size(ogp), occ_pts_coords(2, :), occ_pts_coords(1, :));
     
+    ogp(unocc_indeces) = ogp(unocc_indeces) - beta;
+    ogp(occ_indeces) = ogp(occ_indeces) + alpha;
     
-    
-    
+    ogp(ogp < 0) = -10;
+    ogp(ogp > 0) = 10;
     
     % ------end of your occupancy grid mapping algorithm-------
 
