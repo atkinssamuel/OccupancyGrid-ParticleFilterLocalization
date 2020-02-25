@@ -280,7 +280,7 @@ for i=2:size(t_laser,1)
     
     % save the video frame
     M = getframe;
-    %writeVideo(vid,M);
+    writeVideo(vid,M);
 
     pause(0.01);
    
