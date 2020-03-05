@@ -92,11 +92,13 @@ beta = 10;
 
 % loop over laser scans (every fifth)
 for i=1:5:size(t_laser,1)
-    
     % ------insert your occupancy grid mapping algorithm here------
+    if (abs(omega_interp(i)) > 0.1)
+        continue
+    end
     TIR = [
       cos(theta_interp(i)) -sin(theta_interp(i)) 0 x_interp(i) - 0.1 * cos(theta_interp(i));
-      sin(theta_interp(i)) cos(theta_interp(i)) 0 y_interp(i) - 0.1 * sin(theta_interp(i));
+      sin(theta_interp(i)) cos(theta_interp(i)) 0 y_interp(i);
       0 0 1 0;
       0 0 0 1;
     ];
