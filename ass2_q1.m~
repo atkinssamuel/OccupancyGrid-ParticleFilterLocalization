@@ -58,7 +58,7 @@ ogymax = 6;                     % maximum y value
 ognx = (ogxmax-ogxmin)/ogres;   % number of cells in x direction
 ogny = (ogymax-ogymin)/ogres;   % number of cells in y direction
 oglo = zeros(ogny,ognx);        % occupancy grid in log-odds format
-ogp = zeros(ogny,ognx);         % occupancy grid in probability format
+oglo = zeros(ogny,ognx);         % occupancy grid in probability format
 
 % precalculate some quantities
 numodom = size(t_odom,1);
@@ -79,7 +79,7 @@ vid = VideoWriter('ass2_q1.avi');
 open(vid);
 figure(1);
 clf;
-pcolor(ogp);
+pcolor(oglo);
 colormap(1-gray);
 shading('flat');
 axis equal;
@@ -135,7 +135,7 @@ for i=1:5:size(t_laser,1)
         zeros(1, size(unocc_pts_inertial, 2));
         ];
     unocc_pts_coords(1:2, :) = round(unocc_pts_coords(1:2, :)/0.05);
-    unocc_indeces = sub2ind(size(ogp), unocc_pts_coords(2, :), unocc_pts_coords(1, :));
+    unocc_indeces = sub2ind(size(oglo), unocc_pts_coords(2, :), unocc_pts_coords(1, :));
     
     occ_pts_coords = occ_pts_inertial + [
         ones(1, size(occ_pts_inertial, 2))*(7);
@@ -144,19 +144,20 @@ for i=1:5:size(t_laser,1)
         zeros(1, size(occ_pts_inertial, 2));
         ];
     occ_pts_coords(1:2, :) = round(occ_pts_coords(1:2, :)/0.05);
-    occ_indeces = sub2ind(size(ogp), occ_pts_coords(2, :), occ_pts_coords(1, :));
+    occ_indeces = sub2ind(size(oglo), occ_pts_coords(2, :), occ_pts_coords(1, :));
     
+    o
+    oglo(unocc_indeces) = oglo(unocc_indeces) - beta;
+    oglo(occ_indeces) = oglo(occ_indeces) + alpha;
     
-    oglo(unocc_indeces) = ogp(unocc_indeces) - beta;
-    oglo(occ_indeces) = ogp(occ_indeces) + alpha;
-    
-    ogp = exp(oglo)./(1+exp(oglo));
+    oglo(oglo < 0) = -10;
+    oglo(oglo > 0) = 10;
     
     % ------end of your occupancy grid mapping algorithm-------
 
     % draw the map
     clf;
-    pcolor(ogp);
+    pcolor(oglo);
     colormap(1-gray);
     shading('flat');
     axis equal;

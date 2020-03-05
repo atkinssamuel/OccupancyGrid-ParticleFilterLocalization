@@ -192,8 +192,9 @@ for i=2:size(t_laser,1)
                 j = 640;
             end
             
-            % ------insert your particle filter weight calculation here ---
-            % Ensuring real measurement:
+            % ------insert your particle filter weight calculation here ------
+            
+            % Check if the laser measurement is valid
             if isnan(y_laser(i, j))
                 continue
             end
@@ -225,22 +226,8 @@ for i=2:size(t_laser,1)
             theta_prediction = acos(prediction_matrix(1, 1));
             
             % Transforming to coordinates:
-            x_coord_prediction = round((x_prediction - ogxmin)/ogres);
-            if (x_coord_prediction > 300)
-                x_coord_prediction = 300;
-            else
-                if (x_coord_prediction < 1)
-                    x_coord_prediction = 1;
-                end
-            end
-            y_coord_prediction = round((y_prediction - ogymin)/ogres);
-            if (y_coord_prediction > 180)
-                y_coord_prediction = 180;
-            else
-                if (y_coord_prediction < 1)
-                    y_coord_prediction = 1;
-                end
-            end
+            x_coord_prediction = round(min(300, max(1, (x_prediction - ogxmin)/ogres)));
+            y_coord_prediction = round(min(180, max(1, (y_prediction - ogymin)/ogres)));
             
             for p=0.45:(ogres/2):y_laser_max
                 % Now we will traverse the ray and stop once we have found
@@ -249,8 +236,7 @@ for i=2:size(t_laser,1)
                     continue
                 end
                 
-                x_coord_prediction =  x_coord_prediction + ...
-                    p * cos(theta_prediction);
+                x_coord_prediction =  x_coord_prediction + p*cos(theta_prediction)));
                 if (x_coord_prediction > 300)
                     x_coord_prediction = 300;
                 else
@@ -258,8 +244,7 @@ for i=2:size(t_laser,1)
                         x_coord_prediction = 1;
                     end
                 end
-                y_coord_prediction =  y_coord_prediction + ...
-                    p * sin(theta_prediction);
+                y_coord_prediction =  max(1, min(180, y_coord_prediction + p*sin(theta_prediction)));
                 if (y_coord_prediction > 180)
                     y_coord_prediction = 180;
                 else
@@ -269,12 +254,10 @@ for i=2:size(t_laser,1)
                 end
             end
             
-            % Weight update equation:
-            error = norm([x_coord_prediction; y_coord_prediction] - ...
-                [x_coord_laser; y_coord_laser]);
-            gaussian_update = (1/sqrt(2 * pi * laser_var)) * ...
-                exp(-error^2/(2 * laser_var));
-            w_particle(n) = w_particle(n) + w_gain * gaussian_update;  
+            % Calculate and update weights, assuming Gaussian distribution
+            
+            gauss =         (1/sqrt(2*pi*laser_var))*exp(-norm([x_coord_prediction; y_coord_prediction]-[x_coord_laser; y_coord_laser])^2/(2*laser_var));
+            w_particle(n) = w_particle(n) + w_gain*gauss;  
             
             % ------end of your particle filter weight calculation-------
         end
